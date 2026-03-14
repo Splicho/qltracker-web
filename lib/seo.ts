@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 export const siteConfig = {
   name: "QLTracker",
   shortName: "QLTracker",
+  url: "https://qltracker.com",
   creator: "isevendeuce",
   description:
     "Modern Quake Live server browser with smart downloads, release tracking, favorites, player lookups, and desktop-first server discovery.",
@@ -28,7 +29,7 @@ export function getSiteUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
 
   if (!envUrl) {
-    return "http://localhost:3000";
+    return siteConfig.url;
   }
 
   if (envUrl.startsWith("http://") || envUrl.startsWith("https://")) {
@@ -51,7 +52,7 @@ export function createPageMetadata({
   const resolvedTitle = title ?? siteConfig.name;
 
   return {
-    title,
+    title: title ? title : { absolute: resolvedTitle },
     description: resolvedDescription,
     alternates: {
       canonical: path,
