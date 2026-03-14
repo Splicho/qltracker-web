@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { headers } from "next/headers";
 import { Card, Chip, Link, buttonVariants } from "@heroui/react";
@@ -8,6 +9,7 @@ import {
   getReleaseDownloadData,
   type ReleaseAsset,
 } from "@/lib/download-target";
+import { createPageMetadata } from "@/lib/seo";
 
 type PlatformKey = "windows" | "linux";
 
@@ -21,6 +23,13 @@ const PLATFORM_SECTIONS: Array<Omit<PlatformSection, "assets">> = [
   { key: "windows", label: "Windows" },
   { key: "linux", label: "Linux" },
 ];
+
+export const metadata: Metadata = createPageMetadata({
+  title: "Downloads",
+  path: "/downloads",
+  description:
+    "Download the latest QLTracker builds for Windows and Linux, browse release assets, and view GitHub release notes.",
+});
 
 function classifyAssetPlatform(name: string): PlatformKey | null {
   if (/\.exe$|windows|setup/i.test(name)) {
