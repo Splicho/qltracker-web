@@ -104,13 +104,19 @@ function pickAssetForPlatform(
   if (platform === "windows") {
     if (architecture === "arm64") {
       return (
-        findAsset(downloadableAssets, [/arm64-setup\.exe$/i, /\.exe$/i]) ??
+        findAsset(downloadableAssets, [/arm64-setup\.exe$/i]) ??
+        findAsset(downloadableAssets, [/arm64\.exe$/i]) ??
+        findAsset(downloadableAssets, [/\.exe$/i]) ??
+        findAsset(downloadableAssets, [/setup\.exe$/i]) ??
         findAsset(downloadableAssets, [/x64-setup\.exe$/i])
       );
     }
 
     return (
-      findAsset(downloadableAssets, [/x64-setup\.exe$/i, /\.exe$/i]) ??
+      findAsset(downloadableAssets, [/x64-setup\.exe$/i]) ??
+      findAsset(downloadableAssets, [/x64\.exe$/i]) ??
+      findAsset(downloadableAssets, [/\.exe$/i]) ??
+      findAsset(downloadableAssets, [/setup\.exe$/i]) ??
       findAsset(downloadableAssets, [/arm64-setup\.exe$/i])
     );
   }
@@ -118,14 +124,21 @@ function pickAssetForPlatform(
   if (platform === "linux") {
     if (architecture === "arm64") {
       return (
-        findAsset(downloadableAssets, [/aarch64\.AppImage$/i, /arm64\.deb$/i]) ??
-        findAsset(downloadableAssets, [/AppImage$/i, /\.deb$/i])
+        findAsset(downloadableAssets, [/aarch64\.AppImage$/i]) ??
+        findAsset(downloadableAssets, [/arm64\.AppImage$/i]) ??
+        findAsset(downloadableAssets, [/arm64\.deb$/i]) ??
+        findAsset(downloadableAssets, [/AppImage$/i]) ??
+        findAsset(downloadableAssets, [/\.deb$/i])
       );
     }
 
     return (
-      findAsset(downloadableAssets, [/amd64\.AppImage$/i, /amd64\.deb$/i]) ??
-      findAsset(downloadableAssets, [/AppImage$/i, /\.deb$/i])
+      findAsset(downloadableAssets, [/amd64\.AppImage$/i]) ??
+      findAsset(downloadableAssets, [/x64\.AppImage$/i]) ??
+      findAsset(downloadableAssets, [/amd64\.deb$/i]) ??
+      findAsset(downloadableAssets, [/x64\.deb$/i]) ??
+      findAsset(downloadableAssets, [/AppImage$/i]) ??
+      findAsset(downloadableAssets, [/\.deb$/i])
     );
   }
 
