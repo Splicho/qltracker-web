@@ -1,6 +1,7 @@
 const RELEASES_API_URL =
   "https://api.github.com/repos/Splicho/QLTracker/releases?per_page=10";
 const RELEASES_PAGE_URL = "https://github.com/Splicho/QLTracker/releases";
+const RELEASES_REVALIDATE_SECONDS = 60;
 
 type Platform = "windows" | "macos" | "linux" | "unknown";
 type Architecture = "x64" | "arm64" | "unknown";
@@ -151,7 +152,7 @@ async function fetchReleases(): Promise<GitHubRelease[]> {
       "User-Agent": "qltracker-web",
       "X-GitHub-Api-Version": "2022-11-28",
     },
-    next: { revalidate: 3600 },
+    next: { revalidate: RELEASES_REVALIDATE_SECONDS },
   });
 
   if (!response.ok) {

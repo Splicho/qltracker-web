@@ -20,7 +20,6 @@ export function HomeHero({ downloadHref, downloadLabel }: HomeHeroProps) {
           >
             server browser
           </span>
-          .
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-white/80 sm:text-xl md:text-2xl">
           QLTracker combines Steam server discovery, qlstats enrichment,
