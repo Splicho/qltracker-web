@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum LinkSessionStatus {
+  pending
+  complete
+  expired
+  error
+}
+
+enum ThresholdMode {
+  min_players
+  free_slots
+}
+
+enum DeliveryStatus {
+  success
+  failed
+}
+
+model User {
+  id            String                 @id @default(cuid())
+  discordUserId String                 @unique
+  username      String
+  globalName    String?
+  avatar        String?
+  dmAvailable   Boolean                @default(false)
+  dmErrorMessage String?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  appSessions   AppSession[]
+  linkSessions  LinkSession[]
+  rules         NotificationRule[]
+  deliveries    NotificationDelivery[]
+}
+
+model AppSession {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model LinkSession {
+  id              String            @id @default(cuid())
+  oauthState      String            @unique
+  status          LinkSessionStatus @default(pending)
+  expiresAt       DateTime
+  appSessionToken String?
+  errorMessage    String?
+  completedAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  userId          String?
+  user            User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+}
+
+model NotificationRule {
+  id                 String                 @id @default(cuid())
+  userId             String
+  serverAddr         String
+  serverNameSnapshot String
+  enabled            Boolean                @default(true)
+  thresholdMode      ThresholdMode
+  thresholdValue     Int
+  lastMatched        Boolean                @default(false)
+  lastNotifiedAt     DateTime?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  user               User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries         NotificationDelivery[]
+
+  @@unique([userId, serverAddr])
+  @@index([enabled])
+}
+
+model NotificationDelivery {
+  id                 String               @id @default(cuid())
+  ruleId             String
+  userId             String
+  serverAddr         String
+  serverNameSnapshot String
+  players            Int
+  maxPlayers         Int
+  thresholdMode      ThresholdMode
+  thresholdValue     Int
+  status             DeliveryStatus       @default(success)
+  discordMessageId   String?
+  errorMessage       String?
+  createdAt          DateTime             @default(now())
+  rule               NotificationRule     @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([ruleId])
+  @@index([userId])
+}

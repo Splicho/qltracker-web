@@ -9,23 +9,33 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "notifications:worker": "tsx scripts/notifications-worker.ts",
+    "prisma:generate": "dotenv -e .env.local -- prisma generate",
+    "prisma:migrate": "dotenv -e .env.local -- prisma migrate dev"
   },
   "dependencies": {
+    "@prisma/client": "^6.7.0",
     "@heroui/react": "^3.0.0-rc.1",
     "@heroui/styles": "^3.0.0-rc.1",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "zod": "^4.1.11"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv-cli": "^8.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "prisma": "^6.7.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "^4.20.5",
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }

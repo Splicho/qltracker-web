@@ -12,7 +12,7 @@ const VIDEO_SRC = "/video/video.webm";
 export const metadata: Metadata = createPageMetadata({
   path: "/",
   description:
-    "Modern Quake Live server browser with Steam discovery, qlstats enrichment, favorites, player lookups, and direct join flows.",
+    "Modern Quake Live server browser with Steam discovery, qlstats enrichment, favorites, Discord notifications, player lookups, and direct join flows.",
 });
 
 export default async function Home() {
@@ -30,7 +30,7 @@ export default async function Home() {
     softwareVersion: releaseData.version ?? undefined,
     url: getSiteUrl(),
     description:
-      "Modern Quake Live server browser with Steam discovery, qlstats enrichment, favorites, player lookups, and direct join flows.",
+      "Modern Quake Live server browser with Steam discovery, qlstats enrichment, favorites, Discord notifications, player lookups, and direct join flows.",
   };
 
   return (

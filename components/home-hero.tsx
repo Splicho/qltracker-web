@@ -23,8 +23,8 @@ export function HomeHero({ downloadHref, downloadLabel }: HomeHeroProps) {
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-white/80 sm:text-xl md:text-2xl">
           QLTracker combines Steam server discovery, qlstats enrichment,
-          favorites, player lookups, and direct join flows in a desktop-first
-          browser built for Quake Live.
+          favorites, Discord match notifications, player lookups, and direct
+          join flows in a desktop-first browser built for Quake Live.
         </p>
 
         <div className="mt-10 flex flex-wrap justify-center gap-4">

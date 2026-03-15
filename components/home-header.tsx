@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Image from "next/image";
 
 type HomeHeaderProps = {
@@ -7,7 +8,7 @@ type HomeHeaderProps = {
 export function HomeHeader({ version }: HomeHeaderProps) {
   return (
     <header className="px-6 py-6 sm:px-10">
-      <a
+      <Link
         aria-label="QLTracker home"
         className="inline-flex items-center gap-4"
         href="/"
@@ -24,7 +25,7 @@ export function HomeHeader({ version }: HomeHeaderProps) {
             {version}
           </span>
         ) : null}
-      </a>
+      </Link>
     </header>
   );
 }
