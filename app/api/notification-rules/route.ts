@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 
 import { requireAppSession } from "@/lib/server/auth";
 import { handleRouteError } from "@/lib/server/errors";
-import { clampThresholdValue } from "@/lib/server/notifications";
+import {
+  clampMatchCapacity,
+  clampThresholdValue,
+} from "@/lib/server/notifications";
 import { getPrisma } from "@/lib/server/prisma";
 import { createRuleSchema, toNotificationRule } from "@/lib/server/routes";
 import { getServerSnapshot } from "@/lib/server/service";
@@ -33,6 +36,20 @@ export async function POST(request: Request) {
     const body = createRuleSchema.parse(await request.json());
     const snapshot = await getServerSnapshot(body.serverAddr);
     const maxPlayers = snapshot?.maxPlayers ?? 64;
+    const matchCapacity =
+      body.thresholdMode === "active_free_slots"
+        ? body.matchCapacity != null
+          ? clampMatchCapacity(body.matchCapacity, maxPlayers)
+          : null
+        : null;
+
+    if (body.thresholdMode === "active_free_slots" && matchCapacity == null) {
+      return NextResponse.json(
+        { message: "Match size is required for playing-slot notifications." },
+        { status: 400 },
+      );
+    }
+
     const rule = await prisma.notificationRule.upsert({
       where: {
         userId_serverAddr: {
@@ -42,16 +59,19 @@ export async function POST(request: Request) {
       },
       update: {
         enabled: body.enabled ?? true,
+        matchCapacity,
         serverNameSnapshot: body.serverNameSnapshot,
         thresholdMode: body.thresholdMode,
         thresholdValue: clampThresholdValue(
           body.thresholdMode,
           body.thresholdValue,
           maxPlayers,
+          matchCapacity,
         ),
       },
       create: {
         enabled: body.enabled ?? true,
+        matchCapacity,
         serverAddr: body.serverAddr,
         serverNameSnapshot: body.serverNameSnapshot,
         thresholdMode: body.thresholdMode,
@@ -59,6 +79,7 @@ export async function POST(request: Request) {
           body.thresholdMode,
           body.thresholdValue,
           maxPlayers,
+          matchCapacity,
         ),
         userId: session.user.id,
       },

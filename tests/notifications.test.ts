@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  clampMatchCapacity,
   clampThresholdValue,
   evaluateRuleTransition,
   getThresholdLabel,
@@ -37,6 +38,21 @@ describe("notification rule evaluation", () => {
     expect(next.shouldNotify).toBe(false);
   });
 
+  it("supports active match-slot thresholds", () => {
+    const next = evaluateRuleTransition(
+      {
+        lastMatched: false,
+        matchCapacity: 8,
+        thresholdMode: "active_free_slots",
+        thresholdValue: 1,
+      },
+      { activePlayers: 7, maxPlayers: 24, players: 16 },
+    );
+
+    expect(next.matched).toBe(true);
+    expect(next.shouldNotify).toBe(true);
+  });
+
   it("treats a missing snapshot as unmatched", () => {
     const next = evaluateRuleTransition(
       { lastMatched: true, thresholdMode: "free_slots", thresholdValue: 1 },
@@ -50,7 +66,12 @@ describe("notification rule evaluation", () => {
   it("formats labels and clamps thresholds", () => {
     expect(getThresholdLabel("min_players", 7)).toBe("7+ players");
     expect(getThresholdLabel("free_slots", 1)).toBe("1 free slot or fewer");
+    expect(getThresholdLabel("active_free_slots", 1, 8)).toBe(
+      "1 active slot left or fewer with match size 8",
+    );
     expect(clampThresholdValue("min_players", 99, 16)).toBe(16);
     expect(clampThresholdValue("free_slots", -10, 16)).toBe(0);
+    expect(clampThresholdValue("active_free_slots", 99, 24, 8)).toBe(8);
+    expect(clampMatchCapacity(99, 24)).toBe(24);
   });
 });

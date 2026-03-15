@@ -13,6 +13,7 @@ import {
 import { getPrisma } from "@/lib/server/prisma";
 import {
   fetchSteamSnapshots,
+  fetchActivePlayerSnapshots,
   getCachedSteamSnapshots,
   type SteamServerSnapshot,
 } from "@/lib/server/steam";
@@ -40,6 +41,12 @@ export async function syncNotificationRules() {
       user: true,
     },
   });
+  const activePlayerSnapshots = await fetchActivePlayerSnapshots(
+    env.QLSTATS_API_URL,
+    rules
+      .filter((rule) => rule.thresholdMode === "active_free_slots")
+      .map((rule) => rule.serverAddr),
+  );
 
   const summary = {
     checked: rules.length,
@@ -49,7 +56,7 @@ export async function syncNotificationRules() {
   };
 
   for (const rule of rules) {
-    const resolved = await processRule(rule, snapshots);
+    const resolved = await processRule(rule, snapshots, activePlayerSnapshots);
 
     if (resolved === "failed") {
       summary.failed += 1;
@@ -66,11 +73,37 @@ export async function syncNotificationRules() {
 async function processRule(
   rule: RuleWithUser,
   snapshots: Map<string, SteamServerSnapshot>,
+  activePlayerSnapshots: Map<
+    string,
+    {
+      activePlayers: number;
+      spectatorPlayers: number;
+      totalPlayers: number;
+    }
+  >,
 ) {
   const prisma = getPrisma();
   const env = getNotificationEnv();
   const snapshot = snapshots.get(rule.serverAddr) ?? null;
-  const { matched, shouldNotify } = evaluateRuleTransition(rule, snapshot);
+  const activePlayerSnapshot = activePlayerSnapshots.get(rule.serverAddr) ?? null;
+
+  if (
+    rule.thresholdMode === "active_free_slots" &&
+    snapshot &&
+    (rule.matchCapacity == null || activePlayerSnapshot == null)
+  ) {
+    return "ignored";
+  }
+
+  const { matched, shouldNotify } = evaluateRuleTransition(
+    rule,
+    snapshot
+      ? {
+          ...snapshot,
+          activePlayers: activePlayerSnapshot?.activePlayers ?? null,
+        }
+      : null,
+  );
 
   if (!matched) {
     if (rule.lastMatched) {
@@ -97,6 +130,8 @@ async function processRule(
       serverNameSnapshot: snapshot.name,
       players: snapshot.players,
       maxPlayers: snapshot.maxPlayers,
+      activePlayers: activePlayerSnapshot?.activePlayers ?? null,
+      matchCapacity: rule.matchCapacity,
       thresholdMode: rule.thresholdMode,
       thresholdValue: rule.thresholdValue,
       status: DeliveryStatus.success,
@@ -117,9 +152,22 @@ async function processRule(
       serverName: snapshot.name,
       map: snapshot.map,
       serverAddress: snapshot.addr,
+      activePlayers: activePlayerSnapshot?.activePlayers ?? null,
+      matchCapacity: rule.matchCapacity,
       players: snapshot.players,
       maxPlayers: snapshot.maxPlayers,
-      thresholdLabel: getThresholdLabel(rule.thresholdMode, rule.thresholdValue),
+      playersLabel:
+        rule.thresholdMode === "active_free_slots" &&
+        activePlayerSnapshot &&
+        rule.matchCapacity != null
+          ? `${activePlayerSnapshot.activePlayers}/${rule.matchCapacity} playing (${snapshot.players}/${snapshot.maxPlayers} connected)`
+          : `${snapshot.players}/${snapshot.maxPlayers}`,
+      thresholdLabel: getThresholdLabel(
+        rule.thresholdMode,
+        rule.thresholdValue,
+        rule.matchCapacity,
+      ),
+      thresholdMode: rule.thresholdMode,
       joinUrl: `${env.PUBLIC_BASE_URL.replace(/\/$/, "")}/join/${delivery.id}`,
     });
   } catch (error) {

@@ -7,6 +7,7 @@ const envSchema = z.object({
   DISCORD_CLIENT_SECRET: z.string().min(1),
   DISCORD_BOT_TOKEN: z.string().min(1),
   STEAM_API_KEY: z.string().min(1),
+  QLSTATS_API_URL: z.string().url().default("https://qlstats.net/api"),
   SESSION_SECRET: z.string().min(16),
   WORKER_POLL_INTERVAL_MS: z.coerce.number().int().positive().default(60_000),
 });

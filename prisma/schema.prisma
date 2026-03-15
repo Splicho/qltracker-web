@@ -17,6 +17,7 @@ enum LinkSessionStatus {
 enum ThresholdMode {
   min_players
   free_slots
+  active_free_slots
 }
 
 enum DeliveryStatus {
@@ -77,6 +78,7 @@ model NotificationRule {
   enabled            Boolean                @default(true)
   thresholdMode      ThresholdMode
   thresholdValue     Int
+  matchCapacity      Int?
   lastMatched        Boolean                @default(false)
   lastNotifiedAt     DateTime?
   createdAt          DateTime               @default(now())
@@ -96,6 +98,8 @@ model NotificationDelivery {
   serverNameSnapshot String
   players            Int
   maxPlayers         Int
+  activePlayers      Int?
+  matchCapacity      Int?
   thresholdMode      ThresholdMode
   thresholdValue     Int
   status             DeliveryStatus       @default(success)

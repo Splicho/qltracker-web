@@ -20,6 +20,7 @@ export type NotificationRuleDto = {
   id: string;
   lastMatched: boolean;
   lastNotifiedAt: string | null;
+  matchCapacity: number | null;
   serverAddr: string;
   serverNameSnapshot: string;
   thresholdMode: ThresholdMode;
@@ -34,18 +35,34 @@ export const discordIdentitySchema = z.object({
   username: z.string(),
 });
 
+const thresholdModeSchema = z.enum([
+  "min_players",
+  "free_slots",
+  "active_free_slots",
+]);
+
 export const createRuleSchema = z.object({
   enabled: z.boolean().optional(),
+  matchCapacity: z.number().int().min(1).max(64).nullable().optional(),
   serverAddr: z.string().min(3),
   serverNameSnapshot: z.string().min(1),
-  thresholdMode: z.enum(["min_players", "free_slots"]),
+  thresholdMode: thresholdModeSchema,
   thresholdValue: z.number().int().min(0).max(64),
+}).superRefine((value, context) => {
+  if (value.thresholdMode === "active_free_slots" && value.matchCapacity == null) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Match size is required for playing-slot notifications.",
+      path: ["matchCapacity"],
+    });
+  }
 });
 
 export const updateRuleSchema = z.object({
   enabled: z.boolean().optional(),
+  matchCapacity: z.number().int().min(1).max(64).nullable().optional(),
   serverNameSnapshot: z.string().min(1).optional(),
-  thresholdMode: z.enum(["min_players", "free_slots"]).optional(),
+  thresholdMode: thresholdModeSchema.optional(),
   thresholdValue: z.number().int().min(0).max(64).optional(),
 });
 
@@ -70,6 +87,7 @@ export function toNotificationRule(rule: NotificationRule): NotificationRuleDto 
     id: rule.id,
     lastMatched: rule.lastMatched,
     lastNotifiedAt: rule.lastNotifiedAt?.toISOString() ?? null,
+    matchCapacity: rule.matchCapacity,
     serverAddr: rule.serverAddr,
     serverNameSnapshot: rule.serverNameSnapshot,
     thresholdMode: rule.thresholdMode,

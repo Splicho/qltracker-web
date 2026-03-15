@@ -1,4 +1,5 @@
 import { getNotificationEnv } from "@/lib/server/env";
+import type { ThresholdMode } from "@prisma/client";
 
 const DISCORD_API_BASE = "https://discord.com/api/v10";
 
@@ -13,6 +14,9 @@ type DiscordUserIdentity = {
 };
 
 type NotificationMessageInput = {
+  activePlayers?: number | null;
+  matchCapacity?: number | null;
+  playersLabel: string;
   userId: string;
   serverName: string;
   map: string;
@@ -20,6 +24,7 @@ type NotificationMessageInput = {
   players: number;
   maxPlayers: number;
   thresholdLabel: string;
+  thresholdMode: ThresholdMode;
   joinUrl: string;
 };
 
@@ -123,7 +128,7 @@ export async function sendServerNotification(input: NotificationMessageInput) {
           {
             inline: true,
             name: "Players",
-            value: `${input.players}/${input.maxPlayers}`,
+            value: input.playersLabel,
           },
           {
             inline: false,

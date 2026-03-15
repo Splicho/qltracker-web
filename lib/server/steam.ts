@@ -2,6 +2,7 @@ const STEAM_SERVER_LIST_URL =
   "https://api.steampowered.com/IGameServersService/GetServerList/v1/";
 const QUAKE_LIVE_APP_ID = "282440";
 const CACHE_TTL_MS = 60_000;
+const DEFAULT_QLSTATS_API_URL = "https://qlstats.net/api";
 
 type SteamServerRecord = {
   addr: string;
@@ -23,6 +24,20 @@ export type SteamServerSnapshot = {
   maxPlayers: number;
   name: string;
   players: number;
+};
+
+type QlStatsPlayerRecord = {
+  team?: number | null;
+};
+
+type QlStatsServerPayload = {
+  players?: QlStatsPlayerRecord[];
+};
+
+export type ActivePlayerSnapshot = {
+  activePlayers: number;
+  spectatorPlayers: number;
+  totalPlayers: number;
 };
 
 let cachedSnapshots = new Map<string, SteamServerSnapshot>();
@@ -84,4 +99,77 @@ export async function getCachedSteamSnapshots(apiKey: string) {
   }
 
   return inFlight;
+}
+
+function normalizeQlstatsBaseUrl(baseUrl: string) {
+  const trimmed = baseUrl.trim().replace(/\/$/, "");
+  return trimmed || DEFAULT_QLSTATS_API_URL;
+}
+
+export async function fetchActivePlayerSnapshot(
+  baseUrl: string,
+  serverAddr: string,
+) {
+  const normalizedBaseUrl = normalizeQlstatsBaseUrl(baseUrl);
+  const response = await fetch(
+    `${normalizedBaseUrl}/server/${encodeURIComponent(serverAddr)}/players`,
+    {
+      headers: {
+        Accept: "application/json",
+      },
+      next: {
+        revalidate: 0,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `QLStats player list returned HTTP ${response.status} for ${serverAddr}.`,
+    );
+  }
+
+  const payload = (await response.json()) as QlStatsServerPayload;
+  const players = payload.players ?? [];
+  let activePlayers = 0;
+  let spectatorPlayers = 0;
+
+  for (const player of players) {
+    if (player.team === 3) {
+      spectatorPlayers += 1;
+    } else {
+      activePlayers += 1;
+    }
+  }
+
+  return {
+    activePlayers,
+    spectatorPlayers,
+    totalPlayers: players.length,
+  } satisfies ActivePlayerSnapshot;
+}
+
+export async function fetchActivePlayerSnapshots(
+  baseUrl: string,
+  addrs: string[],
+) {
+  const uniqueAddrs = Array.from(new Set(addrs));
+  const snapshots = await Promise.all(
+    uniqueAddrs.map(async (addr) => {
+      try {
+        const snapshot = await fetchActivePlayerSnapshot(baseUrl, addr);
+        return [addr, snapshot] as const;
+      } catch {
+        return [addr, null] as const;
+      }
+    }),
+  );
+
+  return new Map(
+    snapshots.filter(
+      (
+        entry,
+      ): entry is readonly [string, ActivePlayerSnapshot] => entry[1] !== null,
+    ),
+  );
 }

@@ -3,7 +3,10 @@ import { z } from "zod";
 
 import { requireAppSession } from "@/lib/server/auth";
 import { handleRouteError } from "@/lib/server/errors";
-import { clampThresholdValue } from "@/lib/server/notifications";
+import {
+  clampMatchCapacity,
+  clampThresholdValue,
+} from "@/lib/server/notifications";
 import { getPrisma } from "@/lib/server/prisma";
 import { toNotificationRule, updateRuleSchema } from "@/lib/server/routes";
 import { getServerSnapshot } from "@/lib/server/service";
@@ -41,10 +44,26 @@ export async function PATCH(
     const thresholdValue = body.thresholdValue ?? existingRule.thresholdValue;
     const snapshot = await getServerSnapshot(existingRule.serverAddr);
     const maxPlayers = snapshot?.maxPlayers ?? 64;
+    const matchCapacity =
+      thresholdMode === "active_free_slots"
+        ? clampMatchCapacity(
+            body.matchCapacity ?? existingRule.matchCapacity ?? maxPlayers,
+            maxPlayers,
+          )
+        : null;
+
+    if (thresholdMode === "active_free_slots" && matchCapacity == null) {
+      return NextResponse.json(
+        { message: "Match size is required for playing-slot notifications." },
+        { status: 400 },
+      );
+    }
+
     const updatedRule = await prisma.notificationRule.update({
       where: { id: existingRule.id },
       data: {
         enabled: body.enabled ?? existingRule.enabled,
+        matchCapacity,
         serverNameSnapshot:
           body.serverNameSnapshot ?? existingRule.serverNameSnapshot,
         thresholdMode,
@@ -52,6 +71,7 @@ export async function PATCH(
           thresholdMode,
           thresholdValue,
           maxPlayers,
+          matchCapacity,
         ),
       },
     });
